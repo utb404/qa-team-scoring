@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Скоринг зрелости QA-команды</title>
+  <meta name="description" content="Чек-лист оценки зрелости QA-команды с радарной диаграммой, экспортом и импортом JSON.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>✅</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="page-header">
+    <div class="wrap">
+      <h1>Скоринг зрелости QA-команды</h1>
+      <p class="page-header__sub">Шаблон чек-листа для скоринга v<span id="template-version"></span></p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="panel" aria-labelledby="meta-title">
+      <h2 id="meta-title" class="panel__title">Параметры оценки</h2>
+      <div class="meta">
+        <div class="field">
+          <label for="project-name">Название проекта</label>
+          <input type="text" id="project-name" placeholder="Например: Портал технадзора" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="assessment-date">Дата оценки</label>
+          <input type="date" id="assessment-date">
+        </div>
+        <div class="actions">
+          <button type="button" id="export" class="btn btn--primary">Выгрузить JSON</button>
+          <button type="button" id="import" class="btn">Загрузить JSON</button>
+          <button type="button" id="print" class="btn">Печать</button>
+          <button type="button" id="reset" class="btn btn--ghost">Очистить</button>
+          <input type="file" id="import-file" accept="application/json,.json" hidden>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" hidden></p>
+    </section>
+
+    <section class="panel" aria-labelledby="results-title">
+      <h2 id="results-title" class="panel__title">Результаты</h2>
+
+      <div class="results">
+        <div class="results__chart">
+          <div class="chart-box">
+            <canvas id="radar" aria-label="Радарная диаграмма уровней зрелости по трем блокам" role="img"></canvas>
+            <p id="chart-fallback" class="chart-fallback" hidden>
+              Библиотека диаграмм не загрузилась. Уровни по блокам приведены в карточках ниже.
+            </p>
+          </div>
+          <p class="chart-note">Шкала: от 0 (уровень не достигнут) до 5 (активный).</p>
+        </div>
+
+        <div class="results__overall">
+          <div class="summary" id="overall">
+            <p class="summary__caption">Итоговая зрелость команды</p>
+            <p class="summary__value">0</p>
+            <p class="summary__label">не достигнут</p>
+            <p class="summary__hint">Минимальный уровень среди трех блоков. Уровень засчитывается, если отмечено не менее 80% его пунктов.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="block-cards" id="block-cards"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="checklist-title">
+      <h2 id="checklist-title" class="panel__title">Чек-лист</h2>
+      <div id="checklist"></div>
+    </section>
+  </main>
+
+  <footer class="page-footer">
+    <div class="wrap">
+      <p>Данные не покидают браузер. Для хранения результата выгрузите JSON.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="checklist-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
