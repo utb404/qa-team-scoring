@@ -52,18 +52,20 @@ function levelStats(levelId, blockId) {
   };
 }
 
-function blockStats(blockId) {
-  const levels = LEVELS.map(function (level) {
-    return levelStats(level.id, blockId);
-  });
-
-  // Уровень зрелости блока: максимальный уровень, для которого достигнуты
-  // все уровни начиная с первого (пороговое значение 80% пунктов).
+/** Максимальный уровень, достигнутый последовательно начиная с первого. */
+function sequentialMaturity(levels) {
   let maturity = 0;
   for (let i = 0; i < levels.length; i += 1) {
     if (levels[i].achieved) maturity = levels[i].levelId;
     else break;
   }
+  return maturity;
+}
+
+function blockStats(blockId) {
+  const levels = LEVELS.map(function (level) {
+    return levelStats(level.id, blockId);
+  });
 
   const total = levels.reduce(function (sum, l) { return sum + l.total; }, 0);
   const done = levels.reduce(function (sum, l) { return sum + l.done; }, 0);
@@ -71,19 +73,44 @@ function blockStats(blockId) {
   return {
     blockId: blockId,
     levels: levels,
-    maturity: maturity,
+    maturity: sequentialMaturity(levels),
     total: total,
     done: done,
     ratio: total ? done / total : 0
   };
 }
 
+/** Уровень целиком: пункты всех трех блоков считаются одним пулом. */
+function overallLevelStats(levelId) {
+  const perBlock = BLOCKS.map(function (block) {
+    return levelStats(levelId, block.id);
+  });
+  const total = perBlock.reduce(function (sum, l) { return sum + l.total; }, 0);
+  const done = perBlock.reduce(function (sum, l) { return sum + l.done; }, 0);
+  const ratio = total ? done / total : 1;
+  return {
+    levelId: levelId,
+    total: total,
+    done: done,
+    ratio: ratio,
+    achieved: ratio >= THRESHOLD
+  };
+}
+
 function computeResults() {
   const blocks = BLOCKS.map(function (block) { return blockStats(block.id); });
-  const overall = blocks.reduce(function (min, b) {
-    return Math.min(min, b.maturity);
-  }, 5);
-  return { blocks: blocks, overall: overall };
+
+  // Итоговая зрелость: на каждом уровне 80% считаются от пунктов всех блоков
+  // вместе, перепрыгнуть уровень нельзя.
+  const overallLevels = LEVELS.map(function (level) {
+    return overallLevelStats(level.id);
+  });
+
+  return {
+    blocks: blocks,
+    overallLevels: overallLevels,
+    overall: sequentialMaturity(overallLevels)
+  };
 }
 
 /* ---------- Отрисовка чек-листа ---------- */
@@ -184,6 +211,39 @@ function renderSummary(results) {
   overall.querySelector('.summary__value').textContent = results.overall;
   overall.querySelector('.summary__label').textContent = LEVEL_NAMES[results.overall];
   overall.dataset.level = String(results.overall);
+
+  const ladder = document.getElementById('overall-levels');
+  ladder.innerHTML = '';
+
+  results.overallLevels.forEach(function (level) {
+    const li = document.createElement('li');
+    li.className = 'card__level-row' + (level.achieved ? ' is-achieved' : '');
+
+    const name = document.createElement('span');
+    name.className = 'card__level-label';
+    name.textContent = level.levelId + '. ' + LEVEL_NAMES[level.levelId];
+    li.appendChild(name);
+
+    const bar = document.createElement('span');
+    bar.className = 'bar';
+    const fill = document.createElement('span');
+    fill.className = 'bar__fill';
+    fill.style.width = pct(level.ratio) + '%';
+    bar.appendChild(fill);
+    li.appendChild(bar);
+
+    const num = document.createElement('span');
+    num.className = 'card__level-num';
+    num.textContent = level.done + '/' + level.total + ' (' + pct(level.ratio) + '%)';
+    li.appendChild(num);
+
+    const mark = document.createElement('span');
+    mark.className = 'card__level-mark';
+    mark.textContent = level.achieved ? 'достигнут' : 'нет';
+    li.appendChild(mark);
+
+    ladder.appendChild(li);
+  });
 
   const cards = document.getElementById('block-cards');
   cards.innerHTML = '';
@@ -385,6 +445,15 @@ function buildExportPayload() {
     answers: Object.assign({}, state.answers),
     results: {
       overallMaturity: results.overall,
+      overallLevels: results.overallLevels.map(function (level) {
+        return {
+          level: level.levelId,
+          checkedItems: level.done,
+          totalItems: level.total,
+          percent: pct(level.ratio),
+          achieved: level.achieved
+        };
+      }),
       blocks: results.blocks.map(function (block) {
         const meta = BLOCKS.find(function (b) { return b.id === block.blockId; });
         return {

@@ -228,6 +228,16 @@ body {
   color: var(--muted);
 }
 
+.summary__levels {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+
 .summary[data-level="0"] .summary__value { color: #94a3b8; }
 .summary[data-level="1"] .summary__value,
 .summary[data-level="2"] .summary__value { color: var(--warn); }
